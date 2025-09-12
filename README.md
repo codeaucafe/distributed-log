@@ -1,1 +1,1 @@
-Building a distributed log in go.
+(Slowly) Building a (tiny) distributed log in go.
