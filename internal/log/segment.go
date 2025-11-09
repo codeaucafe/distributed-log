@@ -14,6 +14,10 @@ type segment struct {
 	config     Config
 }
 
+// newSegment creates a new segment with the given base offset in the specified directory. It initializes
+// the store and index files according to the provided configuration. If the index already contains entries,
+// it sets the next offset accordingly; otherwise, it starts from the base offset. If there is an error during
+// initialization, it returns the error.
 func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 	s := &segment{
 		baseOffset: baseOffset,
