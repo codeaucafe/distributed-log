@@ -53,7 +53,7 @@ func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 	if off, _, err := s.index.Read(-1); err != nil {
 		s.nextOffset = baseOffset
 	} else {
-		s.nextOffset = baseOffset + uint64(off)
+		s.nextOffset = baseOffset + uint64(off) + 1
 	}
 
 	return s, nil
