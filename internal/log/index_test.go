@@ -9,7 +9,7 @@ import (
 )
 
 func TestIndex(t *testing.T) {
-	f, err := os.CreateTemp(os.TempDir(), "index_test")
+	f, err := os.CreateTemp("", "index_test")
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 

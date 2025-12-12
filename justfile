@@ -46,8 +46,13 @@ clean:
 # Full workflow: format, lint, generate
 all: format lint generate
 
-# Run Go tests with race detection
+# Run Go tests without race detection
 test:
+    @echo "Running Go tests..."
+    go test -v ./...
+
+# Run Go tests with race detection
+test-race:
     @echo "Running Go tests with race detection..."
-    go test -race ./...
+    go test -v -race ./...
 
