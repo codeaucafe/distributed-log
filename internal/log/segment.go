@@ -162,9 +162,8 @@ func (s *segment) Close() error {
 	return nil
 }
 
+// nearestMultiple returns the largest multiple of k that is less than or equal to j.
+// For example, nearestMultiple(11, 4) returns 8, and nearestMultiple(12, 4) returns 12.
 func nearestMultiple(j, k uint64) uint64 {
-	if j >= 0 {
-		return (j / k) * k
-	}
-	return ((j - k + 1) / k) * k
+	return (j / k) * k
 }
