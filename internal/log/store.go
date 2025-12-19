@@ -135,6 +135,12 @@ func (s *store) Read(pos uint64) ([]byte, error) {
 	return b, nil
 }
 
+// ReadAt implements io.ReaderAt, reading len(p) bytes into p starting at offset off.
+// Unlike Read, this method reads raw bytes without interpreting the length-prefixed
+// record format—callers must know exactly how many bytes to read.
+//
+// ReadAt is thread-safe and flushes the write buffer before reading to ensure
+// all pending writes are visible.
 func (s *store) ReadAt(p []byte, off int64) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -146,6 +152,11 @@ func (s *store) ReadAt(p []byte, off int64) (int, error) {
 	return s.File.ReadAt(p, off)
 }
 
+// Close flushes buffered writes to the OS and closes the file.
+//
+// Note: This implementation relies on OS page cache writeback for persistence.
+// Data is durable after process crash but not guaranteed after power failure.
+// For stronger durability, add s.File.Sync() before Close to force fsync.
 func (s *store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -156,5 +167,4 @@ func (s *store) Close() error {
 	}
 
 	return s.File.Close()
-
 }
