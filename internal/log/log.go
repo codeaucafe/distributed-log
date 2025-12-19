@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -88,6 +89,101 @@ func (l *Log) Read(off uint64) (*api.Record, error) {
 
 }
 
+// Close closes all segments in the log. Safe for concurrent use.
+func (l *Log) Close() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.closeLocked()
+}
+
+// closeLocked closes all segments. Caller must hold l.mu.
+func (l *Log) closeLocked() error {
+	for _, segment := range l.segments {
+		if err := segment.Close(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Remove closes all segments and deletes the log directory. Safe for concurrent use.
+func (l *Log) Remove() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if err := l.closeLocked(); err != nil {
+		return err
+	}
+	return os.RemoveAll(l.Dir)
+}
+
+// Reset removes all data and reinitializes the log. Safe for concurrent use.
+func (l *Log) Reset() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if err := l.closeLocked(); err != nil {
+		return err
+	}
+	if err := os.RemoveAll(l.Dir); err != nil {
+		return err
+	}
+	return l.setup()
+}
+
+// LowestOffset returns the smallest offset in the log. Safe for concurrent use.
+func (l *Log) LowestOffset() (uint64, error) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	return l.segments[0].baseOffset, nil
+}
+
+// HighestOffset returns the largest offset in the log. Safe for concurrent use.
+func (l *Log) HighestOffset() (uint64, error) {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+	off := l.segments[len(l.segments)-1].nextOffset
+	if off == 0 {
+		return 0, nil
+	}
+	return off - 1, nil
+}
+
+// Truncate removes all segments whose highest offset is at or below lowest.
+//
+// This operates at segment granularity: entire segments are removed, not
+// individual records. A segment is removed when its highest stored offset
+// (nextOffset - 1) is <= lowest. Use this to garbage-collect old data that
+// has been consumed or replicated. Safe for concurrent use.
+func (l *Log) Truncate(lowest uint64) error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	var segments []*segment
+	for _, s := range l.segments {
+		if s.nextOffset-1 <= lowest {
+			if err := s.Remove(); err != nil {
+				return err
+			}
+			continue
+		}
+		segments = append(segments, s)
+	}
+	l.segments = segments
+	return nil
+}
+
+func (l *Log) Reader() io.Reader {
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	readers := make([]io.Reader, len(l.segments))
+	for i, segment := range l.segments {
+		readers[i] = &originReader{segment.store, 0}
+	}
+	return io.MultiReader(readers...)
+}
+
 // setup restores the log from existing segment files on disk, or creates the
 // first segment if the directory is empty.
 //
@@ -141,4 +237,15 @@ func (l *Log) newSegment(off uint64) error {
 	l.segments = append(l.segments, s)
 	l.activeSegment = s
 	return nil
+}
+
+type originReader struct {
+	*store
+	off int64
+}
+
+func (o *originReader) Read(p []byte) (int, error) {
+	n, err := o.ReadAt(p, o.off)
+	o.off += int64(n)
+	return n, err
 }
