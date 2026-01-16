@@ -3,12 +3,24 @@ package server
 import (
 	"context"
 
+	"google.golang.org/grpc"
+
 	api "github.com/codeaucafe/distributed-log/api/v1"
 )
 
 // Config holds dependencies for the gRPC server.
 type Config struct {
 	CommitLog CommitLog
+}
+
+func NewGRPCServer(config *Config) (*grpc.Server, error) {
+	gsrv := grpc.NewServer()
+	srv, err := newgrpcServer(config)
+	if err != nil {
+		return nil, err
+	}
+	api.RegisterLogServer(gsrv, srv)
+	return gsrv, nil
 }
 
 // grpcServer implements the Log gRPC service.
