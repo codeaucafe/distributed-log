@@ -11,13 +11,13 @@ type Config struct {
 	CommitLog CommitLog
 }
 
-var _ api.LogServer = (*grpcServer)(nil)
-
 // grpcServer implements the Log gRPC service.
 type grpcServer struct {
 	api.UnimplementedLogServer
 	*Config
 }
+
+var _ api.LogServer = (*grpcServer)(nil)
 
 // newgrpcServer creates a new gRPC server with the given config.
 func newgrpcServer(config *Config) (srv *grpcServer, err error) {
