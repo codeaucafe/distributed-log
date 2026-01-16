@@ -12,27 +12,28 @@ import (
 )
 
 func TestLog(t *testing.T) {
-	for scenario, fn := range map[string]func(
-		t *testing.T, log *Log,
-	){
-		"append and read a record success": testAppendRead,
-		"offset out of range error":        testOutOfRangeErr,
-		"init with existing segments":      testInitExisting,
-		"reader":                           testReader,
-		"truncate":                         testTruncate,
-	} {
-		t.Run(
-			scenario, func(t *testing.T) {
-				dir := t.TempDir()
-				defer os.RemoveAll(dir)
+	tests := []struct {
+		name string
+		fn   func(t *testing.T, log *Log)
+	}{
+		{"append and read a record success", testAppendRead},
+		{"offset out of range error", testOutOfRangeErr},
+		{"init with existing segments", testInitExisting},
+		{"reader", testReader},
+		{"truncate", testTruncate},
+	}
 
-				c := Config{}
-				c.Segment.MaxStoreBytes = 32
-				log, err := NewLog(dir, c)
-				require.NoError(t, err)
-				fn(t, log)
-			},
-		)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			defer os.RemoveAll(dir)
+
+			c := Config{}
+			c.Segment.MaxStoreBytes = 32
+			log, err := NewLog(dir, c)
+			require.NoError(t, err)
+			tt.fn(t, log)
+		})
 	}
 }
 
