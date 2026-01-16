@@ -76,9 +76,8 @@ func (s *grpcServer) ConsumeStream(req *api.ConsumeRequest, stream api.Log_Consu
 		default:
 			res, err := s.Consume(stream.Context(), req)
 			switch err.(type) {
-			case nil:
-			// Offset not in log yet; poll until a producer appends a new record.
-			case api.ErrOffsetOutOfRange:
+			case nil: // Success
+			case api.ErrOffsetOutOfRange: // Offset not in log yet; poll until a producer appends a new record.
 				continue
 			default:
 				return err
