@@ -56,3 +56,26 @@ test-race:
     @echo "Running Go tests with race detection..."
     go test -v -race ./...
 
+# TLS certificate paths
+TLS_DIR := "tls"
+CONFIG_PATH := env_var("HOME") / ".distributed-log"
+
+# Initialize config directory
+init:
+    mkdir -p {{CONFIG_PATH}}
+
+# Generate TLS certificates
+gencert: init
+    @echo "Generating CA certificate..."
+    cfssl gencert \
+        -initca {{TLS_DIR}}/ca-csr.json | cfssljson -bare ca
+    @echo "Generating server certificate..."
+    cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config={{TLS_DIR}}/ca-config.json \
+        -profile=server \
+        {{TLS_DIR}}/server-csr.json | cfssljson -bare server
+    mv *.pem *.csr {{CONFIG_PATH}}
+    @echo "Certificates generated in {{CONFIG_PATH}}"
+

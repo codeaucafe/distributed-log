@@ -21,3 +21,8 @@ bin/
 
 # Environment files
 .env
+
+# TLS certificates and keys
+*-key.pem
+*.pem
+*.csr
