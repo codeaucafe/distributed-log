@@ -76,6 +76,12 @@ gencert: init
         -config={{TLS_DIR}}/ca-config.json \
         -profile=server \
         {{TLS_DIR}}/server-csr.json | cfssljson -bare server
+    cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config={{TLS_DIR}}/ca-config.json \
+        -profile=client \
+        {{TLS_DIR}}/client-csr.json | cfssljson -bare client
     mv *.pem *.csr {{CONFIG_PATH}}
     @echo "Certificates generated in {{CONFIG_PATH}}"
 
