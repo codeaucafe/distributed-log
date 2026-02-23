@@ -1,3 +1,5 @@
+set shell := ["zsh", "-cu"]
+
 # Set default recipe to list available commands
 default:
     @just --list
@@ -81,7 +83,24 @@ gencert: init
         -ca-key=ca-key.pem \
         -config={{TLS_DIR}}/ca-config.json \
         -profile=client \
-        {{TLS_DIR}}/client-csr.json | cfssljson -bare client
+        {{TLS_DIR}}/client-csr.json | cfssljson -bare root-client
+    cfssl gencert \
+        -ca=ca.pem \
+        -ca-key=ca-key.pem \
+        -config={{TLS_DIR}}/ca-config.json \
+        -profile=client \
+        {{TLS_DIR}}/client-csr.json | cfssljson -bare nobody-client
     mv *.pem *.csr {{CONFIG_PATH}}
     @echo "Certificates generated in {{CONFIG_PATH}}"
+
+# Copy ACL model config to config directory
+copy-model: init
+    cp internal/auth/model.conf {{CONFIG_PATH}}/model.conf
+
+# Copy ACL policy to config directory
+copy-policy: init
+    cp internal/auth/policy.csv {{CONFIG_PATH}}/policy.csv
+
+# Copy ACL model and policy to config directory
+copy-acl: copy-model copy-policy
 
